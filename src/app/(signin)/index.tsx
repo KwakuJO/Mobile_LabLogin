@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as z from "zod";
+import styles from '../globalStyle';
 import signInWithEmail from '../lib/authSign';
 import supabase from '../lib/supabase';
 
@@ -17,6 +19,8 @@ export type zodSignInType = z.infer<typeof zodSignIn>;
 // Page Code
 export default function Index() {
   const route = useRouter();
+  const [loading, isLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>("");
 
   // This ensures that if you become signed in you move to the signed in pages
   useEffect(() => {
@@ -26,6 +30,18 @@ export default function Index() {
     });
     return () => data.subscription.unsubscribe();
   }, [route]);
+
+  async function doSignInEmail(data: zodSignInType) {
+    const response = await signInWithEmail(data);
+    if (response) {
+      console.log(response);
+      isLoading(false);
+      setMessage("We don't see a user with that email and password");
+    }
+  }
+
+
+
 
   // This is react hook form for Zod
   const { register, handleSubmit, control, formState: {errors}} = useForm<zodSignInType>({
@@ -37,12 +53,17 @@ export default function Index() {
   });
 
   return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
+          <View>
+            <Text style={styles.h1}>Welcome to App!</Text>
+            <Text style={styles.p}>Sign In here</Text>
+          </View>
+          <View style={styles.inputsContainer}>
             <Controller
                 name="email"
                 control={control}
                 render={({ field: {onChange, value, onBlur}}) => (
-                    <TextInput placeholder="Email" onChangeText={onChange} value={value} onBlur={onBlur}/>
+                    <TextInput style={styles.textInput} placeholder="Email" onChangeText={onChange} value={value} onBlur={onBlur}/>
                     
                 )}
             />
@@ -51,33 +72,32 @@ export default function Index() {
                 name="password"
                 control={control}
                 render={({ field: {onChange, value, onBlur}}) => (
-                    <TextInput placeholder="Password" onChangeText={onChange} value={value} onBlur={onBlur}/>
+                    <TextInput style={styles.textInput}  secureTextEntry={true} placeholder="Password" onChangeText={onChange} value={value} onBlur={onBlur}/>
                     
                 )}
             />
             {errors.password?.message && <Text>{errors.password.message }</Text>}
+            {message && <Text style={styles.p}>{message}</Text>}
+          </View>
+          <View style={styles.inputsContainer}>
             <Pressable
-                onPress={handleSubmit((data) => {
-                  signInWithEmail(data);
-                })}
-                >
-                <Text>Sign In</Text>
+              style={styles.submit}
+              onPress={handleSubmit((data) => {
+                isLoading(true);
+                setMessage("");
+                doSignInEmail(data);
+              })}
+              >
+              {loading ? <ActivityIndicator size="large" /> : <Text style={styles.h1} >Sign In</Text>}
             </Pressable>
             <Pressable
               onPress={() => {
                 route.navigate("/(signup)/signup")
               }}
             >
-              <Text>Sign Up</Text>
+              <Text style={styles.p}>Click here to go to Sign Up</Text>
             </Pressable>
         </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

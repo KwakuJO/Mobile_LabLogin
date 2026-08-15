@@ -8,6 +8,7 @@ async function signInEmail(zData: zodSignInType) {
         email: zData.email,
         password: zData.password
     });
+    return error;
 }
 
 // Sign Out overall
@@ -37,7 +38,7 @@ async function signUpEmail(zData: zodSignUpType) {
 }
 
 export default function signInWithEmail(zData: zodSignInType) {
-    const value = signInEmail(zData);
+    return signInEmail(zData);
 }
 export function signOut() {
     signOutAll();
